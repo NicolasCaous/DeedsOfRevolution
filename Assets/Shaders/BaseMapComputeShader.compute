@@ -1,0 +1,37 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+StructuredBuffer<float2> _Lines;
+int _Width;
+int _Height;
+
+//static const float PI = 3.14159265;
+
+[numthreads(256,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float lng = _Lines[id.x].x;
+    float lat = _Lines[id.x].y;
+
+    //float rad_lat = radians(lat);
+
+    //float new_x = ((lng + 180.0) / 360.0) * _Width;
+    //float new_y = (_Height / 2.0) + (0.5 * log((1 + sin(rad_lat)) / (1 - sin(rad_lat)))) * (_Height / 6.0);
+
+    //float new_x = ((lng + 180.0) / 360.0) * _Width;
+    //float new_y = ((sin(radians(lat)) + 1) / 2) * _Height;
+
+    // lng = ((new_x / _Width) * 360.0) - 180;
+    float new_x = ((lng + 180.0) / 360.0) * _Width;
+    // lat = ((new_y / _Height) * 180.0) - 90;
+    float new_y = ((lat + 90.0) / 180) * _Height;
+
+    Result[float2(new_x, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
+    Result[float2(new_x + 1, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
+    Result[float2(new_x - 1, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
+    Result[float2(new_x, new_y + 1)] = float4(1.0, 1.0, 1.0, 1.0);
+    Result[float2(new_x, new_y - 1)] = float4(1.0, 1.0, 1.0, 1.0);
+}
