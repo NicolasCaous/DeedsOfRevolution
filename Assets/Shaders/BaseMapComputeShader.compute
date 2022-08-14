@@ -1,14 +1,13 @@
 // Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CSMain
+#pragma kernel CopyBaseTexture
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
+Texture2D<float4> BaseTexture;
 RWTexture2D<float4> Result;
+
 StructuredBuffer<float2> _Lines;
 int _Width;
 int _Height;
-
-//static const float PI = 3.14159265;
 
 [numthreads(256,1,1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
@@ -30,8 +29,10 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     float new_y = ((lat + 90.0) / 180) * _Height;
 
     Result[float2(new_x, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
-    Result[float2(new_x + 1, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
-    Result[float2(new_x - 1, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
-    Result[float2(new_x, new_y + 1)] = float4(1.0, 1.0, 1.0, 1.0);
-    Result[float2(new_x, new_y - 1)] = float4(1.0, 1.0, 1.0, 1.0);
+}
+
+[numthreads(16, 16, 1)]
+void CopyBaseTexture(uint3 id : SV_DispatchThreadID)
+{
+    Result[float2(id.x, id.y)] = BaseTexture[id.xy];
 }

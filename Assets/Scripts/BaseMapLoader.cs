@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class BaseMapLoader : MonoBehaviour
 {
+    public Texture2D baseTex;
     public TextAsset geojson;
     public Material material;
     public ComputeShader computeShader;
@@ -55,14 +56,20 @@ public class BaseMapLoader : MonoBehaviour
         tex.enableRandomWrite = true;
         tex.Create();
 
-        int kernelHandle = computeShader.FindKernel("CSMain");
-        computeShader.SetTexture(kernelHandle, "Result", tex);
         computeShader.SetInt("_Width", width);
         computeShader.SetInt("_Height", height);
-        computeShader.SetBuffer(kernelHandle, "_Lines", buffer);
-        computeShader.Dispatch(kernelHandle, (lines.Count / 256) + 1, 1, 1);
+
+        int kernelHandleCopyTexture = computeShader.FindKernel("CopyBaseTexture");
+        computeShader.SetTexture(kernelHandleCopyTexture, "BaseTexture", baseTex);
+        computeShader.SetTexture(kernelHandleCopyTexture, "Result", tex);
+        computeShader.Dispatch(kernelHandleCopyTexture, (width / 16) + 1, (height / 16) + 1, 1);
+
+        int kernelHandleMain = computeShader.FindKernel("CSMain");
+        computeShader.SetTexture(kernelHandleMain, "Result", tex);
+        computeShader.SetBuffer(kernelHandleMain, "_Lines", buffer);
+        computeShader.Dispatch(kernelHandleMain, (lines.Count / 256) + 1, 1, 1);
 
         buffer.Release();
-        material.SetTexture("_MainTex", tex);
+        material.SetTexture("_BaseMap", tex);
     }
 }
