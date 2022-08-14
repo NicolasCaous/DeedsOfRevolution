@@ -3,6 +3,9 @@ Shader "Custom/BaseMap"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _Albedo ("Albedo", Color) = (1, 1, 1, 1)
+        _Brightness ("Brightness", Float) = 1.0
+        _Smoothness ("Smoothness", Float) = 1.0
     }
     SubShader
     {
