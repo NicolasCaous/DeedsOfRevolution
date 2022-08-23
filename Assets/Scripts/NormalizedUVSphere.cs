@@ -19,15 +19,15 @@ public class NormalizedUVSphere : MonoBehaviour
 
     void Start()
     {
-        GetComponent<MeshFilter>().mesh = GenerateMesh();
+
     }
 
     private void OnValidate()
     {
-        GetComponent<MeshFilter>().mesh = GenerateMesh();
+        CullMesh(GenerateMesh());
     }
 
-    private Mesh GenerateMesh()
+    public Mesh GenerateMesh()
     {
         Mesh mesh = new Mesh();
 
@@ -45,7 +45,7 @@ public class NormalizedUVSphere : MonoBehaviour
             for (int j = 0; j < meridians; j++)
             {
                 float mAngle = (360f * j / (meridians - 1)) - 180f;
-                Vector2 UV= LngLat2UVs(new Vector2(mAngle, pAngle) * -1);
+                Vector2 UV = LngLat2UVs(new Vector2(mAngle, pAngle) * -1);
                 UVs.Add(UV);
 
                 float scaler = 1 + heightMap.GetPixelBilinear(UV.x, UV.y).r * heightScaler;
@@ -78,7 +78,7 @@ public class NormalizedUVSphere : MonoBehaviour
                 else
                 {
                     // Is an increase
-                    int rate =  meridians / lastMeridians;
+                    int rate = meridians / lastMeridians;
 
                     if (j % rate != rate - 1) continue;
 
@@ -102,10 +102,28 @@ public class NormalizedUVSphere : MonoBehaviour
             lastMeridians = meridians;
         }
 
-        bool[] vertexInUse = new bool[vertices.Count];
+        mesh.Clear();
+
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.SetUVs(0, UVs);
+
+        mesh.RecalculateBounds();
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        return mesh;
+    }
+
+    public void CullMesh(Mesh mesh)
+    {
+        Vector3[] vertices = mesh.vertices;
+        int[] triangles = mesh.triangles;
+        Vector2[] UVs = mesh.uv;
+
+        bool[] vertexInUse = new bool[vertices.Length];
         List<int> culledTriangles = new List<int>();
 
-        for (int i = 0; i < triangles.Count; i += 3)
+        for (int i = 0; i < triangles.Length; i += 3)
         {
             Vector3 v1 = vertices[triangles[i]];
             Vector3 v2 = vertices[triangles[i + 1]];
@@ -141,9 +159,9 @@ public class NormalizedUVSphere : MonoBehaviour
 
         List<Vector3> culledVertices = new List<Vector3>();
         List<Vector2> culledUVs = new List<Vector2>();
-        int[] offsets = new int[vertices.Count];
+        int[] offsets = new int[vertices.Length];
         int offset = 0;
-        for (int i = 0; i < vertices.Count; ++i)
+        for (int i = 0; i < vertices.Length; ++i)
         {
             if (vertexInUse[i])
             {
@@ -172,7 +190,8 @@ public class NormalizedUVSphere : MonoBehaviour
         mesh.RecalculateBounds();
         mesh.RecalculateNormals();
         mesh.RecalculateTangents();
-        return mesh;
+
+        GetComponent<MeshFilter>().mesh = mesh;
     }
 
     private int CountMeridians(float angle)

@@ -12,6 +12,14 @@ public class BaseMapLoader : MonoBehaviour
     public ComputeShader computeShader;
     public int width = 1024;
     public int height = 1024;
+
+    public GameObject prefab;
+    public Transform prefabParent;
+    [Range(1, 100)]
+    public int parallels = 10;
+    [Range(1, 100)]
+    public int meridians = 10;
+    public Vector2[] defaultPermissiveBounds;
     // Start is called before the first frame update
     void Start()
     {
@@ -72,4 +80,57 @@ public class BaseMapLoader : MonoBehaviour
         buffer.Release();
         material.SetTexture("_BaseMap", tex);
     }
+
+    public void InstantiateSphereSegments()
+    {
+        Mesh mesh = null;
+
+        GameObject meridiansParent = new GameObject($"Meridians");
+        meridiansParent.transform.SetParent(prefabParent);
+        meridiansParent.transform.localPosition = Vector3.zero;
+        meridiansParent.transform.localEulerAngles = Vector3.zero;
+        meridiansParent.transform.localScale = Vector3.one;
+
+        for (float meridian = -180f; meridian < 180f; meridian += 360f/meridians)
+        {
+            GameObject meridianParent = new GameObject($"Meridian {meridian:F2}");
+            meridianParent.transform.SetParent(meridiansParent.transform);
+            meridianParent.transform.localPosition = Vector3.zero;
+            meridianParent.transform.localEulerAngles = Vector3.zero;
+            meridianParent.transform.localScale = Vector3.one;
+
+            for (float parallel = -90f; parallel < 90f; parallel += 180f/parallels)
+            {
+                GameObject clone = Instantiate(prefab);
+                clone.transform.SetParent(meridianParent.transform);
+                clone.transform.localPosition = Vector3.zero;
+                clone.transform.localEulerAngles = Vector3.zero;
+                clone.transform.localScale = Vector3.one;
+
+                NormalizedUVSphere script = clone.GetComponent<NormalizedUVSphere>();
+                script.restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / meridians)));
+                script.restrictiveBounds.Add(new Vector2(0, meridian));
+                script.restrictiveBounds.Add(new Vector2(parallel -90f + (180f / parallels), meridian - 90f + (180f / meridians)));
+                script.restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / meridians)));
+                script.permissiveBounds = defaultPermissiveBounds.ToList();
+
+                if (mesh == null)
+                    mesh = script.GenerateMesh();
+
+                script.CullMesh(
+                    new Mesh()
+                    {
+                        vertices = mesh.vertices,
+                        triangles = mesh.triangles,
+                        normals = mesh.normals,
+                        tangents = mesh.tangents,
+                        bounds = mesh.bounds,
+                        uv = mesh.uv
+                    }
+                );
+            }
+        }
+    }
+
 }
+

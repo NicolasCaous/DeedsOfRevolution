@@ -10,7 +10,12 @@ public class BaseMapLoaderCustomInspector : Editor
     {
         base.OnInspectorGUI();
 
-        if(GUILayout.Button("Load Base Map"))
+        if(GUILayout.Button("Generate Meshes"))
+        {
+            ((BaseMapLoader)target).InstantiateSphereSegments();
+        }
+
+        if (GUILayout.Button("Load Base Map"))
         {
             ((BaseMapLoader)target).LoadData();
         }
