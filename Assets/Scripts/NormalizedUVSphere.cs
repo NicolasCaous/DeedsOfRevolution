@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter))]
 public class NormalizedUVSphere : MonoBehaviour
 {
     public Texture2D heightMap;
@@ -14,18 +13,6 @@ public class NormalizedUVSphere : MonoBehaviour
     public int minimumFactor = 5;
     [Range(3, 10)]
     public int maximumFactor = 10;
-    public List<Vector2> restrictiveBounds;
-    public List<Vector2> permissiveBounds;
-
-    void Start()
-    {
-
-    }
-
-    private void OnValidate()
-    {
-        CullMesh(GenerateMesh());
-    }
 
     public Mesh GenerateMesh()
     {
@@ -114,7 +101,7 @@ public class NormalizedUVSphere : MonoBehaviour
         return mesh;
     }
 
-    public void CullMesh(Mesh mesh)
+    public Mesh CullMesh(Mesh mesh, List<Vector2> restrictiveBounds, List<Vector2> permissiveBounds)
     {
         Vector3[] vertices = mesh.vertices;
         int[] triangles = mesh.triangles;
@@ -191,7 +178,7 @@ public class NormalizedUVSphere : MonoBehaviour
         mesh.RecalculateNormals();
         mesh.RecalculateTangents();
 
-        GetComponent<MeshFilter>().mesh = mesh;
+        return mesh;
     }
 
     private int CountMeridians(float angle)

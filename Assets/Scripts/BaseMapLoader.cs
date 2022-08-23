@@ -83,7 +83,8 @@ public class BaseMapLoader : MonoBehaviour
 
     public void InstantiateSphereSegments()
     {
-        Mesh mesh = null;
+        NormalizedUVSphere sphereGenerator = GetComponent<NormalizedUVSphere>();
+        Mesh mesh = sphereGenerator.GenerateMesh();
 
         GameObject meridiansParent = new GameObject($"Meridians");
         meridiansParent.transform.SetParent(prefabParent);
@@ -107,17 +108,15 @@ public class BaseMapLoader : MonoBehaviour
                 clone.transform.localEulerAngles = Vector3.zero;
                 clone.transform.localScale = Vector3.one;
 
-                NormalizedUVSphere script = clone.GetComponent<NormalizedUVSphere>();
-                script.restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / meridians)));
-                script.restrictiveBounds.Add(new Vector2(0, meridian));
-                script.restrictiveBounds.Add(new Vector2(parallel -90f + (180f / parallels), meridian - 90f + (180f / meridians)));
-                script.restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / meridians)));
-                script.permissiveBounds = defaultPermissiveBounds.ToList();
+                List<Vector2> restrictiveBounds = new List<Vector2>();
+                List<Vector2> permissiveBounds = defaultPermissiveBounds.ToList();
 
-                if (mesh == null)
-                    mesh = script.GenerateMesh();
+                restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / meridians)));
+                restrictiveBounds.Add(new Vector2(0, meridian));
+                restrictiveBounds.Add(new Vector2(parallel -90f + (180f / parallels), meridian - 90f + (180f / meridians)));
+                restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / meridians)));
 
-                script.CullMesh(
+                clone.GetComponent<MeshFilter>().mesh = sphereGenerator.CullMesh(
                     new Mesh()
                     {
                         vertices = mesh.vertices,
@@ -126,7 +125,9 @@ public class BaseMapLoader : MonoBehaviour
                         tangents = mesh.tangents,
                         bounds = mesh.bounds,
                         uv = mesh.uv
-                    }
+                    },
+                    restrictiveBounds,
+                    permissiveBounds
                 );
             }
         }

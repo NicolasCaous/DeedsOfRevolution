@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 194012910996385787}
   - component: {fileID: 5106179785076365130}
   - component: {fileID: 8094553000630530135}
-  - component: {fileID: 1873588727747296392}
   m_Layer: 0
   m_Name: NormalizedUVSphere
   m_TagString: Untagged
@@ -84,22 +83,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &1873588727747296392
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9158376195695914835}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9684d8b28facbe443a84a40195dc14ea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  heightMap: {fileID: 2800000, guid: bdb7112f3f168e84bbc700604633f647, type: 3}
-  heightScaler: 0.05
-  parallels: 200
-  minimumFactor: 3
-  maximumFactor: 9
-  restrictiveBounds: []
-  permissiveBounds: []
