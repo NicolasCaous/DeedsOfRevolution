@@ -5,8 +5,10 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class NormalizedUVSphere : MonoBehaviour
 {
-    // Start is called before the first frame update
-    [Range(3, 100)]
+    public Texture2D heightMap;
+    [Range(0f, 1f)]
+    public float heightScaler = 0.1f;
+    [Range(3, 400)]
     public int parallels = 100;
     [Range(2, 8)]
     public int minimumFactor = 5;
@@ -14,6 +16,7 @@ public class NormalizedUVSphere : MonoBehaviour
     public int maximumFactor = 10;
     public List<Vector2> restrictiveBounds;
     public List<Vector2> permissiveBounds;
+
     void Start()
     {
         GetComponent<MeshFilter>().mesh = GenerateMesh();
@@ -42,10 +45,12 @@ public class NormalizedUVSphere : MonoBehaviour
             for (int j = 0; j < meridians; j++)
             {
                 float mAngle = (360f * j / (meridians - 1)) - 180f;
-                Vector3 vertex = Quaternion.Euler(0, mAngle, 0) * (Quaternion.Euler(pAngle, 0, 0) * Vector3.forward);
+                Vector2 UV= LngLat2UVs(new Vector2(mAngle, pAngle) * -1);
+                UVs.Add(UV);
 
+                float scaler = 1 + heightMap.GetPixelBilinear(UV.x, UV.y).r * heightScaler;
+                Vector3 vertex = Quaternion.Euler(0, mAngle, 0) * (Quaternion.Euler(pAngle, 0, 0) * (Vector3.forward * scaler));
                 vertices.Add(vertex);
-                UVs.Add(LngLat2UVs(new Vector2(mAngle, pAngle) * -1));
 
                 if (lastMeridians == 0)
                     continue;
@@ -109,7 +114,7 @@ public class NormalizedUVSphere : MonoBehaviour
             bool skipTriangle = false;
             foreach (Vector2 bound in restrictiveBounds)
             {
-                Vector3 reference = Quaternion.Euler(bound) * Vector3.forward;
+                Vector3 reference = Quaternion.Euler(bound) * Vector3.back;
                 if (Vector3.Dot(reference, v1) > 0 && Vector3.Dot(reference, v2) > 0 && Vector3.Dot(reference, v3) > 0)
                     skipTriangle = true;
             }
@@ -119,7 +124,7 @@ public class NormalizedUVSphere : MonoBehaviour
             int boundCount = 0;
             foreach (Vector2 bound in permissiveBounds)
             {
-                Vector3 reference = Quaternion.Euler(bound) * Vector3.forward;
+                Vector3 reference = Quaternion.Euler(bound) * Vector3.back;
                 if (Vector3.Dot(reference, v1) > 0 && Vector3.Dot(reference, v2) > 0 && Vector3.Dot(reference, v3) > 0)
                     boundCount += 1;
             }
@@ -164,7 +169,9 @@ public class NormalizedUVSphere : MonoBehaviour
         mesh.triangles = culledTriangles.ToArray();
         mesh.SetUVs(0, culledUVs);
 
+        mesh.RecalculateBounds();
         mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
         return mesh;
     }
 
