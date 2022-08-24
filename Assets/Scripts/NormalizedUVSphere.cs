@@ -1,20 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NormalizedUVSphere : MonoBehaviour
+public class NormalizedUVSphere
 {
-    public Texture2D heightMap;
-    [Range(0f, 1f)]
-    public float heightScaler = 0.1f;
-    [Range(3, 400)]
-    public int parallels = 100;
-    [Range(2, 8)]
-    public int minimumFactor = 5;
-    [Range(3, 10)]
-    public int maximumFactor = 10;
-
-    public Mesh GenerateMesh()
+    public static Mesh GenerateMesh(int parallels, int minimumFactor, int maximumFactor, float heightScaler, Texture2D heightMap)
     {
         Mesh mesh = new Mesh();
 
@@ -26,7 +15,7 @@ public class NormalizedUVSphere : MonoBehaviour
         for (int i = 0; i < parallels; i++)
         {
             float pAngle = (180f * i / (parallels - 1)) - 90f;
-            int meridians = CountMeridians(pAngle);
+            int meridians = CountMeridians(pAngle, minimumFactor, maximumFactor);
             int indexOfLastMeridian = vertices.Count - lastMeridians;
 
             for (int j = 0; j < meridians; j++)
@@ -101,7 +90,7 @@ public class NormalizedUVSphere : MonoBehaviour
         return mesh;
     }
 
-    public Mesh CullMesh(Mesh mesh, List<Vector2> restrictiveBounds, List<Vector2> permissiveBounds)
+    public static Mesh CullMesh(Mesh mesh, List<Vector2> restrictiveBounds, List<Vector2> permissiveBounds)
     {
         Vector3[] vertices = mesh.vertices;
         int[] triangles = mesh.triangles;
@@ -181,7 +170,7 @@ public class NormalizedUVSphere : MonoBehaviour
         return mesh;
     }
 
-    private int CountMeridians(float angle)
+    private static int CountMeridians(float angle, int minimumFactor, int maximumFactor)
     {
         int minimum = Mathf.RoundToInt(Mathf.Pow(2, minimumFactor));
         int maximum = Mathf.RoundToInt(Mathf.Pow(2, maximumFactor));
@@ -197,7 +186,7 @@ public class NormalizedUVSphere : MonoBehaviour
         return result;
     }
 
-    private Vector2 Point2LngLat(Vector3 point, Vector3 lngPlaneNormal, Vector3 lngZero)
+    public static Vector2 Point2LngLat(Vector3 point, Vector3 lngPlaneNormal, Vector3 lngZero)
     {
         Vector3 lngProjectedVec = Vector3.ProjectOnPlane(point, lngPlaneNormal);
         float lng = -1 * Vector3.SignedAngle(lngZero, lngProjectedVec, lngPlaneNormal);
@@ -205,7 +194,7 @@ public class NormalizedUVSphere : MonoBehaviour
         return new Vector2(lng, lat);
     }
 
-    private Vector2 LngLat2UVs(Vector2 lngLat)
+    public static Vector2 LngLat2UVs(Vector2 lngLat)
     {
         float lng = (lngLat.x + 180f) / 360f;
         float lat = (lngLat.y + 90f) / 180f;

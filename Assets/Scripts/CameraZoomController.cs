@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CameraZoomController : MonoBehaviour
 {
@@ -61,5 +62,10 @@ public class CameraZoomController : MonoBehaviour
             0,
             0
         );
+    }
+
+    public void OnMouseScroll(InputAction.CallbackContext context)
+    {
+        Debug.Log("AA");
     }
 }

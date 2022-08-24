@@ -16,11 +16,21 @@ public class BaseMapLoader : MonoBehaviour
     public GameObject prefab;
     public Transform prefabParent;
     [Range(1, 100)]
-    public int parallels = 10;
+    public int sectionParallels = 10;
     [Range(1, 100)]
-    public int meridians = 10;
+    public int sectionMeridians = 10;
     public Vector2[] defaultPermissiveBounds;
     // Start is called before the first frame update
+
+    public Texture2D heightMap;
+    [Range(0f, 1f)]
+    public float heightScaler = 0.1f;
+    [Range(3, 400)]
+    public int parallels = 100;
+    [Range(2, 8)]
+    public int minimumFactor = 5;
+    [Range(3, 10)]
+    public int maximumFactor = 10;
     void Start()
     {
         LoadData();
@@ -83,8 +93,7 @@ public class BaseMapLoader : MonoBehaviour
 
     public void InstantiateSphereSegments()
     {
-        NormalizedUVSphere sphereGenerator = GetComponent<NormalizedUVSphere>();
-        Mesh mesh = sphereGenerator.GenerateMesh();
+        Mesh mesh = NormalizedUVSphere.GenerateMesh(parallels, minimumFactor, maximumFactor, heightScaler, heightMap);
 
         GameObject meridiansParent = new GameObject($"Meridians");
         meridiansParent.transform.SetParent(prefabParent);
@@ -92,7 +101,7 @@ public class BaseMapLoader : MonoBehaviour
         meridiansParent.transform.localEulerAngles = Vector3.zero;
         meridiansParent.transform.localScale = Vector3.one;
 
-        for (float meridian = -180f; meridian < 180f; meridian += 360f/meridians)
+        for (float meridian = -180f; meridian < 180f; meridian += 360f/ sectionMeridians)
         {
             GameObject meridianParent = new GameObject($"Meridian {meridian:F2}");
             meridianParent.transform.SetParent(meridiansParent.transform);
@@ -100,7 +109,7 @@ public class BaseMapLoader : MonoBehaviour
             meridianParent.transform.localEulerAngles = Vector3.zero;
             meridianParent.transform.localScale = Vector3.one;
 
-            for (float parallel = -90f; parallel < 90f; parallel += 180f/parallels)
+            for (float parallel = -90f; parallel < 90f; parallel += 180f/ sectionParallels)
             {
                 GameObject clone = Instantiate(prefab);
                 clone.transform.SetParent(meridianParent.transform);
@@ -111,12 +120,12 @@ public class BaseMapLoader : MonoBehaviour
                 List<Vector2> restrictiveBounds = new List<Vector2>();
                 List<Vector2> permissiveBounds = defaultPermissiveBounds.ToList();
 
-                restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / meridians)));
+                restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / sectionMeridians)));
                 restrictiveBounds.Add(new Vector2(0, meridian));
-                restrictiveBounds.Add(new Vector2(parallel -90f + (180f / parallels), meridian - 90f + (180f / meridians)));
-                restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / meridians)));
+                restrictiveBounds.Add(new Vector2(parallel -90f + (180f / sectionParallels), meridian - 90f + (180f / sectionMeridians)));
+                restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / sectionMeridians)));
 
-                clone.GetComponent<MeshFilter>().mesh = sphereGenerator.CullMesh(
+                clone.GetComponent<MeshFilter>().mesh = NormalizedUVSphere.CullMesh(
                     new Mesh()
                     {
                         vertices = mesh.vertices,
