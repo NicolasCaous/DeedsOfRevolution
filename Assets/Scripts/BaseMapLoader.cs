@@ -31,9 +31,18 @@ public class BaseMapLoader : MonoBehaviour
     public int minimumFactor = 5;
     [Range(3, 10)]
     public int maximumFactor = 10;
+
+    public bool liveEdit = false;
+    private bool canUpdateSpheres = true;
     void Start()
     {
         LoadData();
+    }
+
+    void OnValidate()
+    {
+        if (liveEdit)
+            StartDestroyAndInstantiateSphereSegments(true);
     }
 
     public void LoadData()
@@ -91,6 +100,15 @@ public class BaseMapLoader : MonoBehaviour
         material.SetTexture("_BaseMap", tex);
     }
 
+    public void StartDestroyAndInstantiateSphereSegments(bool overrideValues)
+    {
+        if (canUpdateSpheres)
+        {
+            canUpdateSpheres = false;
+            StartCoroutine(DestroyAndInstantiateSphereSegments(overrideValues));
+        }
+    }
+
     public void InstantiateSphereSegments()
     {
         Mesh mesh = NormalizedUVSphere.GenerateMesh(parallels, minimumFactor, maximumFactor, heightScaler, heightMap);
@@ -100,6 +118,7 @@ public class BaseMapLoader : MonoBehaviour
         meridiansParent.transform.localPosition = Vector3.zero;
         meridiansParent.transform.localEulerAngles = Vector3.zero;
         meridiansParent.transform.localScale = Vector3.one;
+        meridiansParent.isStatic = true;
 
         for (float meridian = -180f; meridian < 180f; meridian += 360f/ sectionMeridians)
         {
@@ -108,24 +127,19 @@ public class BaseMapLoader : MonoBehaviour
             meridianParent.transform.localPosition = Vector3.zero;
             meridianParent.transform.localEulerAngles = Vector3.zero;
             meridianParent.transform.localScale = Vector3.one;
+            meridianParent.isStatic = true;
 
             for (float parallel = -90f; parallel < 90f; parallel += 180f/ sectionParallels)
             {
-                GameObject clone = Instantiate(prefab);
-                clone.transform.SetParent(meridianParent.transform);
-                clone.transform.localPosition = Vector3.zero;
-                clone.transform.localEulerAngles = Vector3.zero;
-                clone.transform.localScale = Vector3.one;
-
                 List<Vector2> restrictiveBounds = new List<Vector2>();
                 List<Vector2> permissiveBounds = defaultPermissiveBounds.ToList();
 
                 restrictiveBounds.Add(new Vector2(0, meridian - 180f + (360f / sectionMeridians)));
                 restrictiveBounds.Add(new Vector2(0, meridian));
-                restrictiveBounds.Add(new Vector2(parallel -90f + (180f / sectionParallels), meridian - 90f + (180f / sectionMeridians)));
+                restrictiveBounds.Add(new Vector2(parallel - 90f + (180f / sectionParallels), meridian - 90f + (180f / sectionMeridians)));
                 restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / sectionMeridians)));
 
-                clone.GetComponent<MeshFilter>().mesh = NormalizedUVSphere.CullMesh(
+                Mesh newMesh = NormalizedUVSphere.CullMesh(
                     new Mesh()
                     {
                         vertices = mesh.vertices,
@@ -138,9 +152,50 @@ public class BaseMapLoader : MonoBehaviour
                     restrictiveBounds,
                     permissiveBounds
                 );
+                if (newMesh == null) continue;
+
+                GameObject clone = Instantiate(prefab);
+                clone.transform.SetParent(meridianParent.transform);
+                clone.transform.localPosition = Vector3.zero;
+                clone.transform.localEulerAngles = Vector3.zero;
+                clone.transform.localScale = Vector3.one;
+                clone.isStatic = true;
+
+                clone.GetComponent<MeshFilter>().mesh = newMesh;
             }
         }
     }
 
+    IEnumerator DestroyAndInstantiateSphereSegments(bool overrideValues)
+    {
+        yield return null;
+        DestroyImmediate(GameObject.Find("Meridians"));
+
+        if (!overrideValues)
+        {
+            InstantiateSphereSegments();
+        }
+        else
+        {
+            int oldSectionParallels = sectionParallels;
+            int oldSectionMeridians = sectionMeridians;
+            int oldParallels = parallels;
+            int oldMaximumFactor = maximumFactor;
+
+            sectionParallels = 2;
+            sectionMeridians = 2;
+            parallels = 50;
+            maximumFactor = 7;
+
+            InstantiateSphereSegments();
+
+            sectionParallels = oldSectionParallels;
+            sectionMeridians = oldSectionMeridians;
+            parallels = oldParallels;
+            maximumFactor = oldMaximumFactor;
+        }
+
+        canUpdateSpheres = true;
+    }
 }
 

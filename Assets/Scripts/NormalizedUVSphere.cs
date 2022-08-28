@@ -133,6 +133,8 @@ public class NormalizedUVSphere
             vertexInUse[triangles[i + 2]] = true;
         }
 
+        if (culledTriangles.Count == 0) return null;
+
         List<Vector3> culledVertices = new List<Vector3>();
         List<Vector2> culledUVs = new List<Vector2>();
         int[] offsets = new int[vertices.Length];
