@@ -16,12 +16,21 @@
                 },
                 {
                     "name": "MouseMovement",
-                    "type": "Value",
+                    "type": "PassThrough",
                     "id": "b694763d-6a25-4fa3-8adb-990acb6ec744",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "Drag",
+                    "type": "Button",
+                    "id": "20ed85ca-ac59-4969-9942-54e2d5b9ae90",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -44,6 +53,17 @@
                     "processors": "",
                     "groups": "MouseAndKeyboard",
                     "action": "MouseMovement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a93a7347-73ab-45fa-9c82-5932fa5ceb6d",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "MouseAndKeyboard",
+                    "action": "Drag",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
