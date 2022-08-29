@@ -15,11 +15,22 @@ public class CameraRotationController : MonoBehaviour
     public float correctionFactor = 5;
     public bool zoomFollowCursor = true;
 
+    [Range(0, 1)]
+    public float dragMomentumStartThreshhold = 0.01f;
+    [Range(0, 1)]
+    public float dragMomentumTimeThreshhold = 0.05f;
+    [Range(0, 1)]
+    public float dragMomentumDecay = 0.98f;
+    [Range(0, 100)]
+    public float dragMomentumDecayThreshold = 0.01f;
+
     public Vector2 boundCenter = new Vector2(-46, -15);
     public Vector2 boundSize = new Vector2(70, 50);
     private Bounds bounds;
 
     private Vector3 dragPoint;
+    private double dragStartTime;
+    private Vector2 dragMomentum;
     private bool isDragging = false;
 
     private Vector3 targetPoint;
@@ -27,6 +38,10 @@ public class CameraRotationController : MonoBehaviour
 
     private Vector2 latestScreenPosition;
     private Quaternion cameraRotationFromCenter;
+
+    private Vector2 lastLngLat;
+    private double lastLngLatTime;
+    private bool firstLngLat = false;
 
     void Start()
     {
@@ -36,8 +51,26 @@ public class CameraRotationController : MonoBehaviour
         );
     }
 
+    void Update()
+    {
+        if((!isDragging) && dragMomentum.sqrMagnitude > 0)
+        {
+            lastLngLat += dragMomentum * Time.deltaTime;
+            dragMomentum = dragMomentumDecay * dragMomentum;
+
+            if (dragMomentum.sqrMagnitude < dragMomentumDecayThreshold)
+                dragMomentum = Vector2.zero;
+
+            lastLngLat = ClampLngLat(lastLngLat);
+            rotationInterpolator.RotateTo(lastLngLat, 0.1f);
+        }
+    }
+
     public void RotateToCursor(Vector3 oldCameraPos, float factor)
     {
+        if(zoomFollowCursor)
+            dragMomentum = Vector2.zero;
+
         if (!targetExists || !zoomFollowCursor) return;
 
         Vector3 newCameraPos = ((oldCameraPos - targetPoint) * Mathf.Pow(factor, correctionFactor)) + targetPoint;
@@ -69,6 +102,27 @@ public class CameraRotationController : MonoBehaviour
         Vector2 lngLat = ClampLngLat(Vector3ToLngLat(rotationCorrection * (dragPointRotation * (cameraRotationFromCenter * Vector3.forward)) * transform.position.magnitude));
 
         rotationInterpolator.RotateTo(lngLat, 0.1f);
+        CalculateDragMomentum(lngLat);
+    }
+
+    private void CalculateDragMomentum(Vector2 newLngLat)
+    {
+        if (firstLngLat)
+        {
+            lastLngLat = newLngLat;
+            lastLngLatTime = Time.realtimeSinceStartupAsDouble;
+            firstLngLat = false;
+            return;
+        }
+
+        double newLngLatTime = Time.realtimeSinceStartupAsDouble;
+        double deltaTime = newLngLatTime - lastLngLatTime;
+        dragMomentum = new Vector2(
+            (float) ((newLngLat.x - lastLngLat.x) / deltaTime),
+            (float) ((newLngLat.y - lastLngLat.y) / deltaTime)
+        );
+        lastLngLat = newLngLat;
+        lastLngLatTime = newLngLatTime;
     }
 
     public void OnMouseMovement(InputAction.CallbackContext context)
@@ -88,13 +142,19 @@ public class CameraRotationController : MonoBehaviour
             {
                 dragPoint = targetPoint;
                 isDragging = true;
+                firstLngLat = true;
                 cameraRotationFromCenter = Quaternion.FromToRotation(Vector3.forward, transform.position);
+                dragStartTime = Time.realtimeSinceStartupAsDouble;
             }
         } if (context.canceled)
         {
             if (isDragging)
             {
                 isDragging = false;
+                double dragDeltaTime = Time.realtimeSinceStartupAsDouble - dragStartTime;
+                double deltaTime = Time.realtimeSinceStartupAsDouble - lastLngLatTime;
+                if (deltaTime > dragMomentumTimeThreshhold || dragDeltaTime < dragMomentumStartThreshhold)
+                    dragMomentum = Vector2.zero;
             }
         }
     }
