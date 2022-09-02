@@ -39,8 +39,7 @@ public class CameraRotationController : MonoBehaviour
     private Vector2 dragMomentum;
     private double dragMomentumStart;
     private bool isDragging = false;
-    private bool newMouseMovement = false;
-    private LngLatRecorder dragHistory = new LngLatRecorder(1000);
+    private LngLatRecorder dragHistory = new LngLatRecorder(10000);
 
     void Start()
     {
@@ -93,19 +92,6 @@ public class CameraRotationController : MonoBehaviour
         if (targetExists = terrainCollider.Raycast(lastestRay, out raycastHit, 5000))
             targetPoint = raycastHit.point;
 
-        if (newMouseMovement)
-        {
-            newMouseMovement = false;
-            if (targetExists && isDragging)
-            {
-                dragHistory.Record(Vector3ToLngLat(CorrectPointToLngLat(targetPoint)));
-            }
-            else
-            {
-                // TODO
-            }
-        }
-
         if (isDragging) CalculateDrag();
     }
 
@@ -123,6 +109,7 @@ public class CameraRotationController : MonoBehaviour
         );
         lastLngLat = ClampLngLat(camLngLat + deltaLngLat);
         rotationInterpolator.RotateTo(lastLngLat, 0.1f);
+        dragHistory.Record(lastLngLat);
     }
 
     private void CalculateFinalMomentum()
@@ -132,7 +119,7 @@ public class CameraRotationController : MonoBehaviour
         dragMomentum = Vector2.zero;
         if (frames.Count == 0) return;
 
-        dragMomentum = (frames[frames.Count - 1].lngLat - frames[0].lngLat) / (float)(frames[0].time - frames[frames.Count - 1].time);
+        dragMomentum = (frames[frames.Count - 1].lngLat - frames[0].lngLat) / (float)(frames[frames.Count - 1].time - frames[0].time);
     }
 
     public void OnMouseMovement(InputAction.CallbackContext context)
@@ -140,7 +127,6 @@ public class CameraRotationController : MonoBehaviour
         if (context.performed)
         {
             latestScreenPosition = context.action.ReadValue<Vector2>();
-            newMouseMovement = true;
         }
     }
 
