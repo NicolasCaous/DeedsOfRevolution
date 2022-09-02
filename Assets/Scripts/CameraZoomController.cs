@@ -15,7 +15,7 @@ public class CameraZoomController : MonoBehaviour
     [Range(0, 1)]
     public float target = 0.5f;
 
-    public float lerpMS = 250f;
+    public float lerpMS = 1000f;
     private float elapsed = 0f;
 
     public AnimationCurve heightCurve;
@@ -66,6 +66,7 @@ public class CameraZoomController : MonoBehaviour
     {
         if(context.performed)
         {
+            rotationController.StopDragMomentum();
             Vector2 scroll = context.action.ReadValue<Vector2>();
 
             target += -1 * scrollFactor * scroll.y;
