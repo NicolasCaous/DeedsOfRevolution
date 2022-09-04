@@ -3,6 +3,7 @@
 #pragma kernel CopyBaseTexture
 
 Texture2D<float4> BaseTexture;
+Texture2D<float4> AlphaTexture;
 RWTexture2D<float4> Result;
 
 StructuredBuffer<float2> _Lines;
@@ -28,11 +29,11 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // lat = ((new_y / _Height) * 180.0) - 90;
     float new_y = ((lat + 90.0) / 180) * _Height;
 
-    Result[float2(new_x, new_y)] = float4(1.0, 1.0, 1.0, 1.0);
+    Result[float2(new_x, new_y)] = float4(1.0, 1.0, 1.0, 0.0);
 }
 
 [numthreads(16, 16, 1)]
 void CopyBaseTexture(uint3 id : SV_DispatchThreadID)
 {
-    Result[float2(id.x, id.y)] = BaseTexture[id.xy];
+    Result[float2(id.x, id.y)] = float4(BaseTexture[id.xy].xyz, AlphaTexture[id.xy].x);
 }

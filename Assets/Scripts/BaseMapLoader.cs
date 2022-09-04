@@ -7,13 +7,15 @@ using UnityEngine;
 public class BaseMapLoader : MonoBehaviour
 {
     public Texture2D baseTex;
+    public Texture2D alphaTex;
     public TextAsset geojson;
     public Material material;
     public ComputeShader computeShader;
     public int width = 1024;
     public int height = 1024;
 
-    public GameObject prefab;
+    public GameObject landPrefab;
+    public GameObject waterPrefab;
     public Transform prefabParent;
     [Range(1, 100)]
     public int sectionParallels = 10;
@@ -33,10 +35,11 @@ public class BaseMapLoader : MonoBehaviour
     public int maximumFactor = 10;
 
     public bool liveEdit = false;
-    private bool canUpdateSpheres = true;
+    public bool canUpdateSpheres = true;
+
     void Start()
     {
-        LoadData();
+        //LoadData();
     }
 
     void OnValidate()
@@ -88,6 +91,7 @@ public class BaseMapLoader : MonoBehaviour
 
         int kernelHandleCopyTexture = computeShader.FindKernel("CopyBaseTexture");
         computeShader.SetTexture(kernelHandleCopyTexture, "BaseTexture", baseTex);
+        computeShader.SetTexture(kernelHandleCopyTexture, "AlphaTexture", alphaTex);
         computeShader.SetTexture(kernelHandleCopyTexture, "Result", tex);
         computeShader.Dispatch(kernelHandleCopyTexture, (width / 16) + 1, (height / 16) + 1, 1);
 
@@ -98,6 +102,7 @@ public class BaseMapLoader : MonoBehaviour
 
         buffer.Release();
         material.SetTexture("_BaseMap", tex);
+        material.SetTexture("_EmissionMap", tex);
     }
 
     public void StartDestroyAndInstantiateSphereSegments(bool overrideValues)
@@ -154,14 +159,40 @@ public class BaseMapLoader : MonoBehaviour
                 );
                 if (newMesh == null) continue;
 
-                GameObject clone = Instantiate(prefab);
-                clone.transform.SetParent(meridianParent.transform);
-                clone.transform.localPosition = Vector3.zero;
-                clone.transform.localEulerAngles = Vector3.zero;
-                clone.transform.localScale = Vector3.one;
-                clone.isStatic = true;
+                bool hasWater = false;
+                bool hasLand = false;
+                for(int i = 0; i < newMesh.uv.Length; i++)
+                {
+                    float u = newMesh.uv[i].x;
+                    float v = newMesh.uv[i].y;
+                    if(alphaTex.GetPixelBilinear(u, v).r > 0f)
+                        hasWater = true;
+                    else
+                        hasLand = true;
+                }
 
-                clone.GetComponent<MeshFilter>().mesh = newMesh;
+                if (hasWater)
+                {
+                    GameObject clone = Instantiate(waterPrefab);
+                    clone.transform.SetParent(meridianParent.transform);
+                    clone.transform.localPosition = Vector3.zero;
+                    clone.transform.localEulerAngles = Vector3.zero;
+                    clone.transform.localScale = Vector3.one;
+                    clone.isStatic = true;
+
+                    clone.GetComponent<MeshFilter>().mesh = newMesh;
+                }
+                if (hasLand)
+                {
+                    GameObject clone = Instantiate(landPrefab);
+                    clone.transform.SetParent(meridianParent.transform);
+                    clone.transform.localPosition = Vector3.zero;
+                    clone.transform.localEulerAngles = Vector3.zero;
+                    clone.transform.localScale = Vector3.one;
+                    clone.isStatic = true;
+
+                    clone.GetComponent<MeshFilter>().mesh = newMesh;
+                }
             }
         }
     }

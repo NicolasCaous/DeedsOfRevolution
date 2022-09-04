@@ -15,9 +15,9 @@ public class BaseMapLoaderCustomInspector : Editor
             ((BaseMapLoader)target).StartDestroyAndInstantiateSphereSegments(false);
         }
 
-        if (GUILayout.Button("Load Base Map"))
+        /*if (GUILayout.Button("Load Base Map"))
         {
             ((BaseMapLoader)target).LoadData();
-        }
+        }*/
     }
 }
