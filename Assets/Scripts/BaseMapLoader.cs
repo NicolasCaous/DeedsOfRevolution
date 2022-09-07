@@ -22,7 +22,6 @@ public class BaseMapLoader : MonoBehaviour
     [Range(1, 100)]
     public int sectionMeridians = 10;
     public Vector2[] defaultPermissiveBounds;
-    // Start is called before the first frame update
 
     public Texture2D heightMap;
     [Range(0f, 1f)]
@@ -56,7 +55,7 @@ public class BaseMapLoader : MonoBehaviour
         foreach (JObject country in data["features"])
             foreach (JArray c1 in country["geometry"]["coordinates"])
                 foreach (JArray c2 in c1)
-                    switch ((string) country["geometry"]["type"])
+                    switch ((string)country["geometry"]["type"])
                     {
                         case "Polygon":
                             if ((float)c2[0] + float.Epsilon >= 180f
@@ -117,6 +116,7 @@ public class BaseMapLoader : MonoBehaviour
     public void InstantiateSphereSegments()
     {
         Mesh mesh = NormalizedUVSphere.GenerateMesh(parallels, minimumFactor, maximumFactor, heightScaler, heightMap);
+        Mesh roundMesh = NormalizedUVSphere.GenerateMesh(parallels, minimumFactor, maximumFactor, heightScaler, Texture2D.blackTexture);
 
         GameObject meridiansParent = new GameObject($"Meridians");
         meridiansParent.transform.SetParent(prefabParent);
@@ -125,7 +125,7 @@ public class BaseMapLoader : MonoBehaviour
         meridiansParent.transform.localScale = Vector3.one;
         meridiansParent.isStatic = true;
 
-        for (float meridian = -180f; meridian < 180f; meridian += 360f/ sectionMeridians)
+        for (float meridian = -180f; meridian < 180f; meridian += 360f / sectionMeridians)
         {
             GameObject meridianParent = new GameObject($"Meridian {meridian:F2}");
             meridianParent.transform.SetParent(meridiansParent.transform);
@@ -134,7 +134,7 @@ public class BaseMapLoader : MonoBehaviour
             meridianParent.transform.localScale = Vector3.one;
             meridianParent.isStatic = true;
 
-            for (float parallel = -90f; parallel < 90f; parallel += 180f/ sectionParallels)
+            for (float parallel = -90f; parallel < 90f; parallel += 180f / sectionParallels)
             {
                 List<Vector2> restrictiveBounds = new List<Vector2>();
                 List<Vector2> permissiveBounds = defaultPermissiveBounds.ToList();
@@ -144,28 +144,17 @@ public class BaseMapLoader : MonoBehaviour
                 restrictiveBounds.Add(new Vector2(parallel - 90f + (180f / sectionParallels), meridian - 90f + (180f / sectionMeridians)));
                 restrictiveBounds.Add(new Vector2(parallel + 90f, meridian - 90f + (180f / sectionMeridians)));
 
-                Mesh newMesh = NormalizedUVSphere.CullMesh(
-                    new Mesh()
-                    {
-                        vertices = mesh.vertices,
-                        triangles = mesh.triangles,
-                        normals = mesh.normals,
-                        tangents = mesh.tangents,
-                        bounds = mesh.bounds,
-                        uv = mesh.uv
-                    },
-                    restrictiveBounds,
-                    permissiveBounds
-                );
-                if (newMesh == null) continue;
+                // There is more water than land, so it is better to cull round mesh first
+                Mesh newRoundMesh = CullMesh(roundMesh, restrictiveBounds, permissiveBounds);
+                if (newRoundMesh == null) continue;
 
                 bool hasWater = false;
                 bool hasLand = false;
-                for(int i = 0; i < newMesh.uv.Length; i++)
+                for (int i = 0; i < newRoundMesh.uv.Length; i++)
                 {
-                    float u = newMesh.uv[i].x;
-                    float v = newMesh.uv[i].y;
-                    if(alphaTex.GetPixelBilinear(u, v).r > 0f)
+                    float u = newRoundMesh.uv[i].x;
+                    float v = newRoundMesh.uv[i].y;
+                    if (alphaTex.GetPixelBilinear(u, v).r > 0f)
                         hasWater = true;
                     else
                         hasLand = true;
@@ -180,7 +169,7 @@ public class BaseMapLoader : MonoBehaviour
                     clone.transform.localScale = Vector3.one;
                     clone.isStatic = true;
 
-                    clone.GetComponent<MeshFilter>().mesh = newMesh;
+                    clone.GetComponent<MeshFilter>().mesh = newRoundMesh;
                 }
                 if (hasLand)
                 {
@@ -191,10 +180,27 @@ public class BaseMapLoader : MonoBehaviour
                     clone.transform.localScale = Vector3.one;
                     clone.isStatic = true;
 
-                    clone.GetComponent<MeshFilter>().mesh = newMesh;
+                    clone.GetComponent<MeshFilter>().mesh = CullMesh(mesh, restrictiveBounds, permissiveBounds);
                 }
             }
         }
+    }
+
+    private Mesh CullMesh(Mesh mesh, List<Vector2> restrictiveBounds, List<Vector2> permissiveBounds)
+    {
+        return NormalizedUVSphere.CullMesh(
+            new Mesh()
+            {
+                vertices = mesh.vertices,
+                triangles = mesh.triangles,
+                normals = mesh.normals,
+                tangents = mesh.tangents,
+                bounds = mesh.bounds,
+                uv = mesh.uv
+            },
+            restrictiveBounds,
+            permissiveBounds
+        );
     }
 
     IEnumerator DestroyAndInstantiateSphereSegments(bool overrideValues)

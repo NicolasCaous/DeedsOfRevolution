@@ -77,7 +77,7 @@ public class CameraRotationController : MonoBehaviour
         if (Time.realtimeSinceStartupAsDouble - dragMomentumStart < dragMomentumTimeImunity) return;
 
         Vector3 newCameraPos = ((oldCameraPos - targetPoint) * Mathf.Pow(factor, correctionFactor)) + targetPoint;
-        Vector3 interpolatedTarget = newCameraPos - universalTransform.position;
+        Vector3 interpolatedTarget = UniversalToRelative(newCameraPos);
 
         lastLngLat = ClampLngLat(Vector3ToLngLat(Quaternion.Inverse(lightBoxAngleCorrectionTransform.rotation) * interpolatedTarget));
         rotationInterpolator.RotateTo(lastLngLat, 0f);
@@ -102,9 +102,9 @@ public class CameraRotationController : MonoBehaviour
 
     private void CalculateDrag()
     {
-        Vector2 deltaLngLat = dragLngLat - Vector3ToLngLat(CorrectPointToLngLat(targetPoint));
+        Vector2 deltaLngLat = dragLngLat - Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
         Vector2 camLngLat = Vector3ToLngLat(
-            CorrectPointToLngLat((cam.gameObject.transform.position - universalTransform.position).normalized)
+            CorrectPointToLngLat(UniversalToRelative(cam.gameObject.transform.position).normalized)
           * terrainContainerTransform.localScale.magnitude
         );
         lastLngLat = ClampLngLat(camLngLat + deltaLngLat);
@@ -137,7 +137,7 @@ public class CameraRotationController : MonoBehaviour
             if (targetExists)
             {
                 dragMomentum = Vector2.zero;
-                dragLngLat = Vector3ToLngLat(CorrectPointToLngLat(targetPoint));
+                dragLngLat = Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
                 isDragging = true;
             }
         }
@@ -152,6 +152,12 @@ public class CameraRotationController : MonoBehaviour
             }
         }
     }
+
+    private Vector3 UniversalToRelative(Vector3 point)
+    {
+        return point - universalTransform.position;
+    }
+
     private Vector2 ClampLngLat(Vector2 lngLat)
     {
         return bounds.ClosestPoint(new Vector3(lngLat.x, lngLat.y, 0));
