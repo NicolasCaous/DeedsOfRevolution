@@ -202,7 +202,7 @@ public class SphereMeshGenerator : MonoBehaviour
         List<Vector2> UVs = new List<Vector2>();
         for (int i = 0; i < verticesA.Length; ++i)
         {
-            UVs.Add(LngLat2UVs(Point2LngLat(verticesA[i], Vector3.up, Vector3.forward)));
+            UVs.Add(LngLatUtils.LngLat2UVs(LngLatUtils.Point2LngLat(verticesA[i], Vector3.up, Vector3.forward)));
         }
 
         mesh.Clear();
@@ -213,18 +213,5 @@ public class SphereMeshGenerator : MonoBehaviour
 
         mesh.RecalculateNormals();
         return mesh;
-    }
-
-    private Vector2 Point2LngLat(Vector3 point, Vector3 lngPlaneNormal, Vector3 lngZero)
-    {
-        Vector3 lngProjectedVec = Vector3.ProjectOnPlane(point, lngPlaneNormal);
-        float lng = -1 * Vector3.SignedAngle(lngZero, lngProjectedVec, lngPlaneNormal);
-        float lat = 90f - Vector3.Angle(point, lngPlaneNormal);
-        return new Vector2(lng, lat);
-    }
-
-    private Vector2 LngLat2UVs(Vector2 lngLat)
-    {
-        return new Vector2((lngLat.x + 180f) / 360f, (lngLat.y + 90f) / 180f);
     }
 }

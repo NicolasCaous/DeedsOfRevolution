@@ -21,7 +21,7 @@ public class NormalizedUVSphere
             for (int j = 0; j < meridians; j++)
             {
                 float mAngle = (360f * j / (meridians - 1)) - 180f;
-                Vector2 UV = LngLat2UVs(new Vector2(mAngle, pAngle) * -1);
+                Vector2 UV = LngLatUtils.LngLat2UVs(new Vector2(mAngle, pAngle) * -1);
                 UVs.Add(UV);
 
                 float scaler = 1 + heightMap.GetPixelBilinear(UV.x, UV.y).r * heightScaler;
@@ -186,20 +186,5 @@ public class NormalizedUVSphere
         }
 
         return result;
-    }
-
-    public static Vector2 Point2LngLat(Vector3 point, Vector3 lngPlaneNormal, Vector3 lngZero)
-    {
-        Vector3 lngProjectedVec = Vector3.ProjectOnPlane(point, lngPlaneNormal);
-        float lng = -1 * Vector3.SignedAngle(lngZero, lngProjectedVec, lngPlaneNormal);
-        float lat = 90f - Vector3.Angle(point, lngPlaneNormal);
-        return new Vector2(lng, lat);
-    }
-
-    public static Vector2 LngLat2UVs(Vector2 lngLat)
-    {
-        float lng = (lngLat.x + 180f) / 360f;
-        float lat = (lngLat.y + 90f) / 180f;
-        return new Vector2(lng, lat);
     }
 }

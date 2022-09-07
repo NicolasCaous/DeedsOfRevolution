@@ -100,7 +100,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 1
-    - _Alpha_Clip_Threshold: 0.8
+    - _Alpha_Clip_Threshold: 0.4
     - _AmbientOcclusion: 1
     - _Ambient_Occlusion: 0.05
     - _Blend: 0

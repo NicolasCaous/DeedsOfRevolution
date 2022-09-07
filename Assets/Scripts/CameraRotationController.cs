@@ -79,7 +79,7 @@ public class CameraRotationController : MonoBehaviour
         Vector3 newCameraPos = ((oldCameraPos - targetPoint) * Mathf.Pow(factor, correctionFactor)) + targetPoint;
         Vector3 interpolatedTarget = UniversalToRelative(newCameraPos);
 
-        lastLngLat = ClampLngLat(Vector3ToLngLat(Quaternion.Inverse(lightBoxAngleCorrectionTransform.rotation) * interpolatedTarget));
+        lastLngLat = ClampLngLat(LngLatUtils.Vector3ToLngLat(Quaternion.Inverse(lightBoxAngleCorrectionTransform.rotation) * interpolatedTarget));
         rotationInterpolator.RotateTo(lastLngLat, 0f);
     }
 
@@ -95,15 +95,10 @@ public class CameraRotationController : MonoBehaviour
         if (isDragging) CalculateDrag();
     }
 
-    private Vector3 CorrectPointToLngLat(Vector3 value)
-    {
-        return Quaternion.Inverse(lightBoxAngleCorrectionTransform.rotation) * value;
-    }
-
     private void CalculateDrag()
     {
-        Vector2 deltaLngLat = dragLngLat - Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
-        Vector2 camLngLat = Vector3ToLngLat(
+        Vector2 deltaLngLat = dragLngLat - LngLatUtils.Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
+        Vector2 camLngLat = LngLatUtils.Vector3ToLngLat(
             CorrectPointToLngLat(UniversalToRelative(cam.gameObject.transform.position).normalized)
           * terrainContainerTransform.localScale.magnitude
         );
@@ -137,7 +132,7 @@ public class CameraRotationController : MonoBehaviour
             if (targetExists)
             {
                 dragMomentum = Vector2.zero;
-                dragLngLat = Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
+                dragLngLat = LngLatUtils.Vector3ToLngLat(CorrectPointToLngLat(UniversalToRelative(targetPoint)));
                 isDragging = true;
             }
         }
@@ -152,6 +147,10 @@ public class CameraRotationController : MonoBehaviour
             }
         }
     }
+    private Vector3 CorrectPointToLngLat(Vector3 value)
+    {
+        return Quaternion.Inverse(lightBoxAngleCorrectionTransform.rotation) * value;
+    }
 
     private Vector3 UniversalToRelative(Vector3 point)
     {
@@ -161,14 +160,6 @@ public class CameraRotationController : MonoBehaviour
     private Vector2 ClampLngLat(Vector2 lngLat)
     {
         return bounds.ClosestPoint(new Vector3(lngLat.x, lngLat.y, 0));
-    }
-
-    private Vector2 Vector3ToLngLat(Vector3 point)
-    {
-        float lng = -1 * Mathf.Atan2(point.x, point.z) * Mathf.Rad2Deg;
-        float lat = -1 * Mathf.Atan2(-point.y, new Vector2(point.x, point.z).magnitude) * Mathf.Rad2Deg;
-
-        return new Vector2(lng, lat);
     }
 
     private class LngLatRecorder
