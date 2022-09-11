@@ -10,7 +10,7 @@ public class CountriesBorderGeneratorEditor : Editor
 
         if (GUILayout.Button("Load Countries Borders"))
         {
-            ((CountriesBorderGenerator) target).LoadCountriesBorders();
+            ((CountriesBorderGenerator) target).StartDestroyAndLoadBorders();
         }
     }
 }
