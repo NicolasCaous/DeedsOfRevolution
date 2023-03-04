@@ -116,7 +116,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
-    - _Alpha_Clip_Threshold: 0.01
+    - _Alpha_Clip_Threshold: 0
     - _AmbientOcclusion: 1
     - _Ambient_Occlusion: 0.05
     - _Blend: 0
@@ -150,7 +150,7 @@ Material:
     - _Range: 1
     - _ReceiveShadows: 1
     - _Reflectance: 0.5
-    - _Resolution: 50
+    - _Resolution: 100
     - _SampleGI: 0
     - _Shininess: 0
     - _Shore_Distance_Bias: 0

@@ -10,8 +10,9 @@ public class CountriesBorderGenerator : MonoBehaviour
 
     public Transform lightBoxAngleCorrectionTransform;
     public TextAsset geojson;
-    public float simplifyThreshold = 0.5f;
-    public int skipIfFewer = 10;
+
+    public float LODObjectSize = 250f;
+    public List<Vector2> LODValues;
 
     public List<Region> allowedRegions;
 
@@ -152,10 +153,9 @@ public class CountriesBorderGenerator : MonoBehaviour
 
         foreach (KeyValuePair<string, List<BorderData>> entry in multiBorders)
         {
-            int i = 0;
-            for (int j=0; j<entry.Value.Count; ++j)
+            for (int i=0; i<entry.Value.Count; ++i)
             {
-                BorderData borderData = entry.Value[j];
+                BorderData borderData = entry.Value[i];
                 borderData.MultiBordersIndex = i;
 
                 if (!newRegions.ContainsKey(borderData.Region))
@@ -167,11 +167,9 @@ public class CountriesBorderGenerator : MonoBehaviour
                 if (!newRegions[borderData.Region][borderData.SubRegion].ContainsKey(borderData.CountryName))
                     newRegions[borderData.Region][borderData.SubRegion].Add(borderData.CountryName, new SortedSet<int>());
 
-                if(CreateBorder(borderData, multiBordersContainer)) 
-                {
-                    newRegions[borderData.Region][borderData.SubRegion][borderData.CountryName].Add(borderData.MultiBordersIndex);
-                    ++i;
-                };
+                newRegions[borderData.Region][borderData.SubRegion][borderData.CountryName].Add(borderData.MultiBordersIndex);
+
+                CreateBorder(borderData, multiBordersContainer);
             }
         }
 
@@ -258,7 +256,7 @@ public class CountriesBorderGenerator : MonoBehaviour
         DisableOutOfBounds(GameObject.Find("Multi-borders Container"));
     }
 
-    private bool CreateBorder(BorderData borderData, GameObject parent)
+    private void CreateBorder(BorderData borderData, GameObject parent)
     {
         GameObject borderSet = GameObject.Find(borderData.CountryName + " Border Set");
         if (borderSet == null)
@@ -270,37 +268,58 @@ public class CountriesBorderGenerator : MonoBehaviour
             borderSet.transform.localScale = Vector3.one;
         }
 
-        Vector3[] positions = new Vector3[borderData.LngLat.Count];
-        GameObject clone = Instantiate(borderPrefab);
-        clone.name = borderData.CountryName + " Border";
+        GameObject borderLODGroup = new GameObject(borderData.CountryName);
         if (borderData.MultiBordersIndex > -1)
-            clone.name += " " + borderData.MultiBordersIndex;
-        clone.transform.SetParent(borderSet.transform);
-        clone.transform.localPosition = Vector3.zero;
-        clone.transform.localEulerAngles = Vector3.zero;
-        clone.transform.localScale = Vector3.one;
+            borderLODGroup.name += " " + borderData.MultiBordersIndex;
+        borderLODGroup.name += " Border LOD Group";
+        borderLODGroup.transform.SetParent(borderSet.transform);
+        borderLODGroup.transform.localPosition = Vector3.zero;
+        borderLODGroup.transform.localEulerAngles = Vector3.zero;
+        borderLODGroup.transform.localScale = Vector3.one;
 
-        RegionDataContainer regionDataContainer = clone.AddComponent<RegionDataContainer>();
+        RegionDataContainer regionDataContainer = borderLODGroup.AddComponent<RegionDataContainer>();
         regionDataContainer.countryName = borderData.CountryName;
         regionDataContainer.region = borderData.Region;
         regionDataContainer.subRegion = borderData.SubRegion;
         regionDataContainer.multiBordersIndex = borderData.MultiBordersIndex;
 
+        LODGroup lodGroup = borderLODGroup.AddComponent<LODGroup>();
+
+        LOD[] newLODs = new LOD[LODValues.Count];
+        for (int i=0; i<LODValues.Count; ++i)
+        {
+            Vector2 lodValue = LODValues[i];
+            GameObject clone = InstantiateClone(borderData, borderLODGroup, lodValue[0]);
+
+            LOD lod = new LOD(lodValue[1], new Renderer[] { clone.GetComponent<LineRenderer>() });
+            newLODs[i] = lod;
+        }
+
+        lodGroup.SetLODs(newLODs);
+        lodGroup.size = LODObjectSize;
+    }
+
+    private GameObject InstantiateClone(BorderData borderData, GameObject parent, float simplifyFactor)
+    {
+        GameObject clone = Instantiate(borderPrefab);
+        clone.name = borderData.CountryName + $" Border LOD {simplifyFactor:f2}";
+
+        clone.transform.SetParent(parent.transform);
+        clone.transform.localPosition = Vector3.zero;
+        clone.transform.localEulerAngles = Vector3.zero;
+        clone.transform.localScale = Vector3.one;
+
         LineRenderer lineRenderer = clone.GetComponent<LineRenderer>();
+        Vector3[] positions = new Vector3[borderData.LngLat.Count];
 
         for (int i = 0; i < borderData.LngLat.Count; ++i)
             positions[i] = LngLatUtils.LngLatToVector3(borderData.LngLat[i], 500f);
 
         lineRenderer.positionCount = positions.Length;
         lineRenderer.SetPositions(positions);
-        lineRenderer.Simplify(simplifyThreshold);
+        lineRenderer.Simplify(simplifyFactor);
 
-        if (lineRenderer.positionCount < skipIfFewer)
-        {
-            DestroyImmediate(clone);
-            return false;
-        }
-        return true;
+        return clone;
     }
 
     IEnumerator DestroyAndLoadBorders()
